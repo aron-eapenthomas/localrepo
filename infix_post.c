@@ -93,7 +93,7 @@ int Pop_Ans_Stack()
 }
 int Eval_Postfix()
 {
-    int i,j,start,num,temp;
+    int i,j=0,start,num,temp,ans,op1,op2;
     i=0;
     while(i<=top_Post)
     {
@@ -101,17 +101,44 @@ int Eval_Postfix()
         {
             if(!isdigit(Post_stack[i+1]))
             {
+                op1=Pop_Ans_Stack();
+                op2=Pop_Ans_Stack();
+
+                switch (Post_stack[i+1])
+                {
+                case '+':
+                    ans=op2+op1;
+                    Push_Ans_Stack(ans);
+                    break;
+                case '-':
+                    ans=op2-op1;
+                    Push_Ans_Stack(ans);
+                    break;
+                case '*':
+                    ans=op2*op1;
+                    Push_Ans_Stack(ans);
+                    break;
+                case '/':
+                    ans=op2/op1;
+                    Push_Ans_Stack(ans);
+                    break;
+                case '^':
+                    ans=(int)pow(op1,op2);
+                    Push_Ans_Stack(ans);
+                    break;
+                }
                 i=i+2;
             }
             else
             {
-                j=i;
+                
                 num=0;
                 for(start=j;start<i;start++)
                 {
                     num=num*10+(Post_stack[start]-'0');
                     printf("%d",num);
                 }
+                j=i;
                 Push_Ans_Stack(num);   
                 i++;             
             }
