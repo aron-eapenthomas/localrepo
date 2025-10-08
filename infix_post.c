@@ -1,40 +1,36 @@
 #include<stdio.h>
 #include<string.h>
 #include<ctype.h>
+#include<math.h>
+#include<stdlib.h>
 #define MaxSize 100
-static int top=-1,top_op=-1,top_Post=-1,Ans_stack[MaxSize];
-static char Post_stack[MaxSize],op_stack[MaxSize];
+static int top=-1;
+static int Ans_stack[MaxSize];
+
+static int top_op=-1;
+static char op_stack[MaxSize];
+
+static int top_Post=-1;
+static char Post_stack[MaxSize];
 int Post(char sy);
 int precedence(char op);
 int precedence(char op)
 {
     if((op=='+')||(op=='-'))
     {
-        return 3;
+        return 1;
     }
     else if((op=='*')||(op=='/'))
     {
-        return 4;
+        return 2;
     }
     else if(op=='^')
     {
-        return 5;
+        return 3;
     }
-    else if(op=='(')
+    else
     {
-        // if(top_op==-1)
-        // {
-        //     return 0;
-        // }
-        // else
-        // {
-        //     return 8;
-        // }
         return 0;
-    }
-    else if (op==')')
-    {
-        return 10;
     }
     
     
@@ -48,18 +44,24 @@ int Post(char sy)
 }
 int stack_operator(char op,int prec)
 {
-    int current_prec=precedence(op_stack[top_op]);
+    int current_prec=-1;
+    if(top_op!=-1)
+    {
+        current_prec=precedence(op_stack[top_op]);
+    }
+    else
+    {
+        current_prec=0;
+    }
     if (op==')')
     {
-        while(op_stack[top_op]!='(')
+        while((top_op!=-1)&& (op_stack[top_op]!='('))
         {
-            // printf("HI %c \n",op_stack[top_op--]);
             Post(op_stack[top_op]);
             Post(' ');
             top_op--;
-            // break;
         }
-        if(op_stack[top_op]=='(')
+        if((top_op!=-1)&& (op_stack[top_op]=='('))
         {
             top_op--;
         }
@@ -68,28 +70,44 @@ int stack_operator(char op,int prec)
     {
         op_stack[++top_op]=op;    
     }
-    else if(current_prec<prec)
+    else if((current_prec<prec)||(top_op==-1))
     {
         op_stack[++top_op]=op;    
     }
     else if(current_prec>=prec)
     {
-        Post(op_stack[top_op]);
-        op_stack[top_op]=op;    
+
+        while (current_prec>=prec)
+        {
+            Post(op_stack[top_op--]);
+            Post(' ');
+            current_prec=precedence(op_stack[top_op]);
+        }
+        op_stack[++top_op]=op;    
+        
     }
     return 0;
 }
 int Push_Ans_Stack(int num)
 {
-    Ans_stack[top]=num;
     top++;
+    Ans_stack[top]=num;
     return 1;
 }
 int Pop_Ans_Stack()
 {
-    int element =Ans_stack[top];
-    top--;
-    return 1;
+    if(top!=-1)
+    {
+        int element =Ans_stack[top];
+        top--;
+        return element;
+    }
+    else
+    {
+        exit(0);
+        return 0;
+
+    }
 }
 int Eval_Postfix()
 {
@@ -97,29 +115,43 @@ int Eval_Postfix()
     i=0;
     while(i<=top_Post)
     {
-        if(Post_stack[i]==' ')
+        if(isspace(Post_stack[i]))
         {
-            if(!isdigit(Post_stack[i+1]))
+            i++;
+        }
+        else if(isdigit(Post_stack[i]))
+        {
+            num=0;
+            while (isdigit(Post_stack[i])&&i<=top_Post)
             {
-                op1=Pop_Ans_Stack();
-                op2=Pop_Ans_Stack();
+                num=num*10+(Post_stack[i]-'0');
+                i++;
+            }
+            Push_Ans_Stack(num);
+            
+        }
+        else
+        {
 
-                switch (Post_stack[i+1])
+                op2=Pop_Ans_Stack();
+                op1=Pop_Ans_Stack();
+
+                switch (Post_stack[i])
                 {
                 case '+':
-                    ans=op2+op1;
+                    ans=op1+op2;
                     Push_Ans_Stack(ans);
                     break;
                 case '-':
-                    ans=op2-op1;
+                    ans=op1-op2;
                     Push_Ans_Stack(ans);
                     break;
                 case '*':
-                    ans=op2*op1;
+                    ans=op1*op2;
                     Push_Ans_Stack(ans);
                     break;
                 case '/':
-                    ans=op2/op1;
+                    ans=op1/op2;
                     Push_Ans_Stack(ans);
                     break;
                 case '^':
@@ -127,24 +159,6 @@ int Eval_Postfix()
                     Push_Ans_Stack(ans);
                     break;
                 }
-                i=i+2;
-            }
-            else
-            {
-                
-                num=0;
-                for(start=j;start<i;start++)
-                {
-                    num=num*10+(Post_stack[start]-'0');
-                    printf("%d",num);
-                }
-                j=i;
-                Push_Ans_Stack(num);   
-                i++;             
-            }
-        }
-        else
-        {
             i++;
         }
     }
@@ -159,13 +173,10 @@ int main()
     int length,i,j,num=0,a=0,b,prec,h;
     printf("Enter the infix expression:");
     scanf("%s",exp);
-    length=strlen(exp);
-    length++;
-    exp[length-1]=')';
-    // exp[length]='\0';
+    strcat(exp, ")");
     top_op++;
+    length=strlen(exp);
     op_stack[top_op]='(';
-    // op_stack[top_op+1]='\0';
 
     for(i=0;i<length;i++)
     {
@@ -179,28 +190,17 @@ int main()
             prec=precedence(exp[i]);
             h=stack_operator(exp[i],prec);
         }
-    }
-    // op_stack[++top_op]=')';
-    // for ( i = 0; i <=top_op; i++)
-    // {
-    //     // if((op_stack[i]!=')')||(op_stack[i]!='('))
-    //     // {
-    //         // }
-        
-    //     Post(op_stack[i]);
-    // }   
+    } 
     //Number generator
-    printf("The Postfix Expression");
+    printf("The Postfix Expression :");
     for(i=0,a=0;i<=top_Post;i++)
     {
         printf("%c",Post_stack[i]);
     }
-    printf("The Evaluated result:%");
+    printf("The Evaluated result:");
     i=Eval_Postfix();
-    for(i=0;i<=top;i++)
-    {
-        printf("%d",Ans_stack[i]);
-    }
+    
+    printf("%d",Ans_stack[top]);
 
 
     return 0;
